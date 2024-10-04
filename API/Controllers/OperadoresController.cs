@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using API.Data;
 using API.Models;
+using API.Services;
 
 namespace API.Controllers
 {
@@ -90,7 +91,9 @@ namespace API.Controllers
           {
               return Problem("Entity set 'APIContext.Operadores'  is null.");
           }
-            _context.Operadores.Add(operador);
+
+            Operador novoOperador = new() { Nome = operador.Nome, CPF = operador.CPF, Senha = CriptografiaService.GerarHashMd5(operador.Senha), Email = operador.Email};
+            _context.Operadores.Add(novoOperador);
             try
             {
                 await _context.SaveChangesAsync();
