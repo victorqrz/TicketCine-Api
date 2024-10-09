@@ -13,5 +13,6 @@ namespace API.Models
         public string Nome { get; set; }
         public DateTime dataNascimento { get; set; }
         public string Email { get; set; }
+        public string Senha { get; set; }
     }
 }

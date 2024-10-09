@@ -1,7 +1,6 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace API.Services
@@ -19,7 +18,7 @@ namespace API.Services
             _audience = audience;
         }
 
-        public string Builder(string email, string entidade)
+        public string Builder(string email, string role)
         {
             // Define a chave secreta para assinatura do token
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_secretKey));
@@ -30,7 +29,7 @@ namespace API.Services
             {
                 new Claim(JwtRegisteredClaimNames.Sub, "Autenticação Sistema"),
                 new Claim(JwtRegisteredClaimNames.Email, email),
-                new Claim("entidade", entidade),
+                new Claim(ClaimTypes.Role, role), // Altere "entidade" para "role" (ClaimTypes.Role)
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()) // Identificador único do token
             };
 

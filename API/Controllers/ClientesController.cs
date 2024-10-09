@@ -7,6 +7,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using API.Data;
 using API.Models;
+using API.Services;
+using API.DTO;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace API.Controllers
 {
@@ -81,19 +85,56 @@ namespace API.Controllers
             return NoContent();
         }
 
-        // POST: api/Clientes
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+         // POST: api/Clientes
         [HttpPost]
-        public async Task<ActionResult<Cliente>> PostCliente(Cliente cliente)
+        [AllowAnonymous]
+        public async Task<ActionResult<ClienteDTO>> PostCliente(Cliente cliente)
         {
-          if (_context.Clientes == null)
-          {
-              return Problem("Entity set 'APIContext.Clientes'  is null.");
-          }
+            // Validações básicas
+            if (string.IsNullOrWhiteSpace(cliente.Email) || string.IsNullOrWhiteSpace(cliente.Senha))
+            {
+                return BadRequest("E-mail e senha são obrigatórios.");
+            }
+
+            // Verificar se já existe um cliente com o mesmo email
+            var clienteExistente = await _context.Clientes
+                .Where(c => c.Email.ToLower() == cliente.Email.ToLower())
+                .FirstOrDefaultAsync();
+
+            if (clienteExistente != null)
+            {
+                return Conflict("Já existe um cliente cadastrado com este e-mail.");
+            }
+
+            // Verificar se o CPF já está cadastrado
+            var cpfExistente = await _context.Clientes
+                .Where(c => c.CPF == cliente.CPF)
+                .FirstOrDefaultAsync();
+
+            if (cpfExistente != null)
+            {
+                return Conflict("Já existe um cliente cadastrado com este CPF.");
+            }
+
+            // Criptografar a senha antes de salvar
+            cliente.Senha = CriptografiaService.GerarHashMd5(cliente.Senha);
+
+            // Adicionar cliente ao banco de dados
             _context.Clientes.Add(cliente);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetCliente", new { id = cliente.IdCliente }, cliente);
+            // Criar o DTO para retornar sem a senha
+            var clienteDTO = new ClienteDTO
+            {
+                IdCliente = cliente.IdCliente,
+                CPF = cliente.CPF,
+                Nome = cliente.Nome,
+                DataNascimento = cliente.dataNascimento,
+                Email = cliente.Email
+            };
+
+            // Retornar o cliente cadastrado com status 201 (Created) e sem a senha
+            return CreatedAtAction("GetCliente", new { id = cliente.IdCliente }, clienteDTO);
         }
 
         // DELETE: api/Clientes/5

@@ -4,10 +4,7 @@ using API.Data;
 using API.Models;
 using API.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Win32;
-using System.Net.Mime;
 using API.DTO;
-using System.Numerics;
 
 namespace API.Controllers
 {
@@ -21,47 +18,49 @@ namespace API.Controllers
         public AuthController(APIContext context)
         {
             _context = context;
-            _tokenService = new TokenService("secret-keysecret-keysecret-key", "ticket-cine", "cinema");
+            _tokenService = new TokenService("secret-keysecret-key", "ticket-cine", "cinema");
         }
 
         [HttpPost]
         [AllowAnonymous]
         public async Task<IActionResult> Autenticacao([FromBody] AutenticacaoDTO autenticacaoDTO)
         {
-            if(string.IsNullOrWhiteSpace(autenticacaoDTO.Email) || string.IsNullOrWhiteSpace(autenticacaoDTO.Senha))
+            if (string.IsNullOrWhiteSpace(autenticacaoDTO.Email) || string.IsNullOrWhiteSpace(autenticacaoDTO.Senha))
             {
                 return BadRequest("E-mail e/ou senha nulos");
             }
 
-            Type tipoEntidade;
+            // Variável para armazenar o usuário encontrado
+            object usuario = null;
+            string role = string.Empty;  // Variável para armazenar a role do usuário
+
+            // Identificar a entidade correspondente e buscar no respectivo DbSet
             switch (autenticacaoDTO.Entidade.ToLower())
             {
                 case "operador":
-                    tipoEntidade = typeof(Operador);
+                    usuario = await _context.Operadores
+                        .Where(e => e.Email.ToLower() == autenticacaoDTO.Email.ToLower()
+                                 && e.Senha == CriptografiaService.GerarHashMd5(autenticacaoDTO.Senha))
+                        .SingleOrDefaultAsync();
+                    role = "Operador";  // Defina a role apropriada
                     break;
                 case "cliente":
-                    tipoEntidade = typeof(Cliente);
+                    usuario = await _context.Clientes
+                        .Where(e => e.Email.ToLower() == autenticacaoDTO.Email.ToLower()
+                                 && e.Senha == CriptografiaService.GerarHashMd5(autenticacaoDTO.Senha))
+                        .SingleOrDefaultAsync();
+                    role = "Cliente";  // Defina a role apropriada
                     break;
-                //case "gestor":
-                //    tipoEntidade = typeof(Gestor);
-                //    break;
+                case "gerente":
+                    usuario = await _context.Gerentes
+                        .Where(e => e.Email.ToLower() == autenticacaoDTO.Email.ToLower()
+                                 && e.Senha == CriptografiaService.GerarHashMd5(autenticacaoDTO.Senha))
+                        .SingleOrDefaultAsync();
+                    role = "Gerente";  // Defina a role apropriada
+                    break;
                 default:
                     return BadRequest("Entidade inválida.");
             }
-
-            //Buscar a entidade correspondente no context
-            var dbSet = _context.GetType().GetProperty(tipoEntidade.Name + "es")?.GetValue(_context) as IQueryable<object>;
-
-            if (dbSet == null)
-            {
-                return BadRequest("Entidade não encontrada no contexto.");
-            }
-
-            // Fazer a consulta com base no e-mail e senha criptografada
-            var usuario = await dbSet
-                .Where(e => EF.Property<string>(e, "Email").ToLower() == autenticacaoDTO.Email.ToLower()
-                            && EF.Property<string>(e, "Senha") == CriptografiaService.GerarHashMd5(autenticacaoDTO.Senha))
-                .SingleOrDefaultAsync();
 
             // Verificar se o usuário foi encontrado
             if (usuario == null)
@@ -69,7 +68,8 @@ namespace API.Controllers
                 return Unauthorized(new { mensagem = "Usuário ou senha inválidos." });
             }
 
-            string token = _tokenService.Builder(autenticacaoDTO.Email, autenticacaoDTO.Entidade);
+            // Gerar o token de autenticação com a role correta
+            string token = _tokenService.Builder(autenticacaoDTO.Email, role);
 
             return Ok(new { Token = token });
         }
