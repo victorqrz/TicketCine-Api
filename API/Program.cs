@@ -34,6 +34,18 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// Adiciona a configuração de CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngular", builder =>
+    {
+        builder.WithOrigins("http://localhost:4200") // Permitir requisições apenas do Angular no localhost:4200
+               .AllowAnyMethod()                     // Permitir todos os métodos (GET, POST, PUT, DELETE, etc.)
+               .AllowAnyHeader()                     // Permitir todos os headers
+               .AllowCredentials();                  // Permitir o uso de credenciais (cookies, tokens)
+    });
+});
+
 var app = builder.Build();
 
 // Configura o middleware de autenticação e autorização
@@ -41,6 +53,9 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
+
+// Ativa a política de CORS configurada anteriormente
+app.UseCors("AllowAngular"); // Ativa o CORS para permitir requisições do Angular
 
 // Adiciona o middleware de autenticação
 app.UseAuthentication(); // Certifique-se de que o middleware de autenticação vem antes do de autorização
