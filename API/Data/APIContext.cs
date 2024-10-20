@@ -23,6 +23,7 @@ namespace API.Data
         public DbSet<Pagamento> Pagamentos { get; set; }
         public DbSet<Sala> Salas { get; set; }
         public DbSet<Sessao> Sessoes { get; set; }
+        public DbSet<OperadorSessao> OperadorSessao { get; set; }
         public DbSet<Gerente> Gerentes { get; set; } // Adicionando o DbSet para a tabela Gerente
 
         // Override do método OnModelCreating para configurar o seed

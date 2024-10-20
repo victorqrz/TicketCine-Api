@@ -13,7 +13,12 @@ namespace API.Models
         public DateTime HoraInicio { get; set; }
         public DateTime HoraFim { get; set; }
         public decimal Valor { get; set; }
-        public virtual Filme IdFilme { get; set; }
-        public virtual Sala IdSala { get; set; }  
+
+        public int IdFilme { get; set; } // Alterado para int
+        public int IdSala { get; set; }  // Alterado para int
+
+        // Navegação opcional, sem impacto no POST
+        public Filme Filme { get; set; }
+        public Sala Sala { get; set; }
     }
 }
