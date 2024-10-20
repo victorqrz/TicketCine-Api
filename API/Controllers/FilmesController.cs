@@ -13,7 +13,7 @@ namespace API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Gerente, Operador")]
+    [Authorize(Roles = "Gerente, Operador, Cliente")]
     public class FilmesController : ControllerBase
     {
         private readonly APIContext _context;
